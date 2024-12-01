@@ -6,13 +6,32 @@
   <title>MedInfo</title>
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
   <style>
-    .hamburger-menu { position: fixed; top: 10px; right: 10px; cursor: pointer; }
+    .suggestions-list {
+      position: absolute;
+      background-color: white;
+      border: 1px solid #ddd;
+      max-height: 200px;
+      overflow-y: auto;
+      width: 100%;
+      z-index: 10;
+    }
+    .suggestion-item {
+      padding: 10px;
+      cursor: pointer;
+    }
+    .suggestion-item:hover {
+      background-color: #f1f1f1;
+    }
   </style>
 </head>
 <body>
   <div class="container mt-5">
     <h1 class="text-center">MedInfo</h1>
-    <input type="text" id="searchInput" class="form-control mt-3" placeholder="Search for a drug...">
+    
+    <!-- Search Box -->
+    <input type="text" id="searchInput" class="form-control mt-3" placeholder="Search for a drug..." autocomplete="off">
+    <ul id="suggestionsList" class="suggestions-list mt-3"></ul>
+    
     <ul id="resultsList" class="list-group mt-3"></ul>
   </div>
 
@@ -23,35 +42,72 @@
   <script>
     const BACKEND_URL = 'https://nodejs-serverless-function-express-six-ebon.vercel.app/'; // Replace with your backend URL
 
-    async function fetchDrugData(query) {
-      const response = await fetch(`${BACKEND_URL}?query=${query}`);
+    // Handle search input events
+    document.getElementById('searchInput').addEventListener('input', async function () {
+      const query = this.value.trim();
+
+      // Show suggestions only if the query is long enough
+      if (query.length > 2) {
+        const suggestions = await fetchSuggestions(query);
+        displaySuggestions(suggestions);
+      } else {
+        document.getElementById('suggestionsList').innerHTML = '';
+      }
+    });
+
+    // Fetch drug suggestions based on the input query
+    async function fetchSuggestions(query) {
+      const response = await fetch(`${BACKEND_URL}/suggestions?query=${query}`);
       const data = await response.json();
       return data;
     }
 
-    document.getElementById('searchInput').addEventListener('input', async function () {
-      const query = this.value.trim();
-      if (query.length > 2) {
-        const drugData = await fetchDrugData(query);
-        displayResults(drugData);
-      } else {
-        document.getElementById('resultsList').innerHTML = '';
-      }
-    });
+    // Display drug name suggestions
+    function displaySuggestions(suggestions) {
+      const suggestionsList = document.getElementById('suggestionsList');
+      suggestionsList.innerHTML = '';
 
-    function displayResults(data) {
-      const resultsList = document.getElementById('resultsList');
-      resultsList.innerHTML = `
-        <li class="list-group-item"><strong>Brand Name:</strong> ${data.brandName || 'N/A'}</li>
-        <li class="list-group-item"><strong>Generic Name:</strong> ${data.genericName || 'N/A'}</li>
-        <li class="list-group-item"><strong>Class:</strong> ${data.drugClass || 'N/A'}</li>
-        <li class="list-group-item"><strong>Dosage Forms:</strong> ${data.dosageForms || 'N/A'}</li>
-        <li class="list-group-item"><strong>Uses:</strong> ${data.uses || 'N/A'}</li>
-        <li class="list-group-item"><strong>Side Effects:</strong> ${data.sideEffects || 'N/A'}</li>
-        <li class="list-group-item"><strong>Pharmacology:</strong> ${data.pharmacology || 'N/A'}</li>
-      `;
+      suggestions.forEach(suggestion => {
+        const listItem = document.createElement('li');
+        listItem.classList.add('suggestion-item');
+        listItem.textContent = suggestion.name;
+        listItem.onclick = () => selectSuggestion(suggestion);
+        suggestionsList.appendChild(listItem);
+      });
     }
 
+    // Handle selection of a drug suggestion
+    function selectSuggestion(suggestion) {
+      document.getElementById('searchInput').value = suggestion.name;
+      document.getElementById('suggestionsList').innerHTML = '';
+      fetchDrugData(suggestion.name);
+    }
+
+    // Fetch full drug data based on the selected suggestion
+    async function fetchDrugData(drugName) {
+      const response = await fetch(`${BACKEND_URL}?query=${drugName}`);
+      const data = await response.json();
+      displayResults(data);
+    }
+
+    // Display full drug data
+    function displayResults(data) {
+      const resultsList = document.getElementById('resultsList');
+      resultsList.innerHTML = '';
+      data.forEach(drug => {
+        resultsList.innerHTML += `
+          <li class="list-group-item">
+            <strong>Brand Name:</strong> ${drug.brandName || 'N/A'} <br>
+            <strong>Generic Name:</strong> ${drug.genericName || 'N/A'} <br>
+            <strong>Class:</strong> ${drug.drugClass || 'N/A'} <br>
+            <strong>Uses:</strong> ${drug.uses || 'N/A'} <br>
+            <strong>Side Effects:</strong> ${drug.sideEffects || 'N/A'}
+          </li>
+        `;
+      });
+    }
+
+    // Show info about the website
     function showInfo() {
       alert('MedInfo: A comprehensive drug information database.');
     }
