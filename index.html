@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MedInfo</title>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <style>
+    .hamburger-menu { position: fixed; top: 10px; right: 10px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="container mt-5">
+    <h1 class="text-center">MedInfo</h1>
+    <input type="text" id="searchInput" class="form-control mt-3" placeholder="Search for a drug...">
+    <ul id="resultsList" class="list-group mt-3"></ul>
+  </div>
+
+  <div class="hamburger-menu" onclick="showInfo()">
+    <button class="btn btn-primary">Info</button>
+  </div>
+
+  <script>
+    const BACKEND_URL = 'https://your-backend-url.com/api/drugs'; // Replace with your backend URL
+
+    async function fetchDrugData(query) {
+      const response = await fetch(`${BACKEND_URL}?query=${query}`);
+      const data = await response.json();
+      return data;
+    }
+
+    document.getElementById('searchInput').addEventListener('input', async function () {
+      const query = this.value.trim();
+      if (query.length > 2) {
+        const drugData = await fetchDrugData(query);
+        displayResults(drugData);
+      } else {
+        document.getElementById('resultsList').innerHTML = '';
+      }
+    });
+
+    function displayResults(data) {
+      const resultsList = document.getElementById('resultsList');
+      resultsList.innerHTML = `
+        <li class="list-group-item"><strong>Brand Name:</strong> ${data.brandName || 'N/A'}</li>
+        <li class="list-group-item"><strong>Generic Name:</strong> ${data.genericName || 'N/A'}</li>
+        <li class="list-group-item"><strong>Class:</strong> ${data.drugClass || 'N/A'}</li>
+        <li class="list-group-item"><strong>Dosage Forms:</strong> ${data.dosageForms || 'N/A'}</li>
+        <li class="list-group-item"><strong>Uses:</strong> ${data.uses || 'N/A'}</li>
+        <li class="list-group-item"><strong>Side Effects:</strong> ${data.sideEffects || 'N/A'}</li>
+        <li class="list-group-item"><strong>Pharmacology:</strong> ${data.pharmacology || 'N/A'}</li>
+      `;
+    }
+
+    function showInfo() {
+      alert('MedInfo: A comprehensive drug information database.');
+    }
+  </script>
+</body>
+</html>
